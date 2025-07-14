@@ -1,4 +1,4 @@
-
+#libreias que utiliza el programa, son necesarias tener instaladas para la ejecucion por codigo
 import os
 import shutil
 import subprocess
@@ -17,7 +17,7 @@ import io
 import tempfile
 import os
 from pathlib import Path
-import fitz  # PyMuPDF
+import fitz  
 from PIL import Image, ImageTk
 import pygame
 import tkinter as tk
@@ -28,9 +28,6 @@ from ctypes import wintypes
 from PIL import Image, ImageTk
 import io
 from matplotlib.colors import to_hex
-
-
-
 pygame.init()
 pygame.mixer.init()
 
@@ -61,7 +58,7 @@ try:
 except ImportError:
     pygame = None
 try:
-    import fitz  # PyMuPDF
+    import fitz 
 except ImportError:
     fitz = None
 try:
@@ -80,7 +77,9 @@ except ImportError:
 #paleta de colorores de la ui
 PALETTE = ["#FFE5B4", "#FAD896", "#F5CB78", "#F0BE5A", "#EBC13C", "#E6AE1E", "#DD9D00", "#D38C00", "#C97B00", "#BF6A00"]
 
+#clase principal
 class FileManagerApp:
+    #funcion de inicio del programa
     def __init__(self, root):
         self.root = root
         self.root.title("File Flow Tracker")
@@ -98,6 +97,7 @@ class FileManagerApp:
         self.audio_channel = pygame.mixer.Channel(0)
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
+    #Funcion al cerrar la ui
     def on_close(self):
         # 1) Señala a los hilos que deben parar
         self.cancel_event.set()
@@ -115,7 +115,7 @@ class FileManagerApp:
         # 4) Y asegúrate de salir del intérprete
         sys.exit(0)
 
-        #aplicar los stilos de la paleta de colores
+    #aplicar los stilos de la paleta de colores a la ui
     def apply_styles(self):
         style = ttk.Style(self.root)
         style.theme_use('clam')
@@ -147,7 +147,7 @@ class FileManagerApp:
         main.grid(row=0, column=0, sticky='nsew')
         self.root.rowconfigure(0, weight=1); self.root.columnconfigure(0, weight=1)
 
-        # Control panel
+        # panel de control
         ctrl = ttk.Frame(main)
         ctrl.grid(row=0, column=0, sticky='ew', padx=10, pady=5)
         ttk.Button(ctrl, text="Seleccionar Carpeta", command=self.on_select).grid(row=0, column=0)
@@ -158,7 +158,7 @@ class FileManagerApp:
         self.filter_cb.bind("<<ComboboxSelected>>", lambda e: self.populate_extra_tree())
         self.filter_cb.bind("<KeyRelease>", self.on_filter_key)
 
-        # Paned for trees
+        # Panel para las tablas
         pane = ttk.PanedWindow(main, orient=tk.HORIZONTAL)
         pane.grid(row=1, column=0, sticky='nsew', padx=10, pady=5)
         pane.rowconfigure(0, weight=1)
@@ -175,6 +175,7 @@ class FileManagerApp:
             style='TLabelframe',
             labelanchor='n'  
         )
+        #tabla de tipo archivo mas pesado
         summary_frame.grid_rowconfigure(0, weight=1); summary_frame.grid_columnconfigure(0, weight=1)
         cols_sum = ("Tipo","Tamaño_MB")
         self.summary_tree = ttk.Treeview(summary_frame, columns=cols_sum, show='headings')
@@ -190,13 +191,14 @@ class FileManagerApp:
         self.summary_tree.bind("<Double-1>", self.open_in_explorer_folder)
         pane.add(summary_frame, weight=1)
 
-        # Detail tree
+        # titulo del panel de las tablas
         detail_frame = ttk.Labelframe(
         pane,
         text="Listado General de los Archivos de la Carpeta/Disco",
         style='TLabelframe',
         labelanchor='n'
         )
+        # tabla de resumen general de los archivos
         detail_frame = ttk.Labelframe(pane, text="Resumen General de los Archivos de la Carpeta/Disco")
         detail_frame.grid_rowconfigure(0, weight=1); detail_frame.grid_columnconfigure(0, weight=1)
         cols_det = ("Archivo","Tamaño_MB","Tipo","Accion")
@@ -215,20 +217,18 @@ class FileManagerApp:
         self.extra_tree.bind("<ButtonRelease-1>", self.on_action_click)
         pane.add(detail_frame, weight=3)
         
-        # <<< aquí crea folder_frame >>> 
+        # Tabla de subcarpetas mas pesadas
         folder_frame = ttk.Labelframe(pane, text="Subcarpetas Pesadas", style='TLabelframe', labelanchor='n')
         folder_frame.grid_rowconfigure(0, weight=1)
         folder_frame.grid_columnconfigure(0, weight=1)
         pane.add(folder_frame, weight=2) 
-
-        # Ahora puedes crear self.folder_tree dentro de folder_frame:
         cols_folders = ("Carpeta","Tamaño_MB","Ubicación")
         self.folder_tree = ttk.Treeview(folder_frame, columns=cols_folders, show='headings')
         for c, t in zip(cols_folders, ["Carpeta","Tamaño (MB)","Ubicación"]):
             self.folder_tree.heading(c, text=t,
                 command=lambda c=c: self.sort_tree(self.folder_tree, c, c=="Tamaño_MB"))
             self.folder_tree.column(c, anchor='center')
-        # Scrollbars:
+        # Scrollbars para las tablas:
         vsb_f = ttk.Scrollbar(folder_frame, orient=tk.VERTICAL, command=self.folder_tree.yview)
         hsb_f = ttk.Scrollbar(folder_frame, orient=tk.HORIZONTAL, command=self.folder_tree.xview)
         self.folder_tree.configure(yscroll=vsb_f.set, xscroll=hsb_f.set)
@@ -251,7 +251,7 @@ class FileManagerApp:
             style='TLabelframe',
             labelanchor='n'
         )
-        # AHORA que ya existe, configuras sus pesos
+        # peso del grafico
         self.chart_frame.grid_rowconfigure(0, weight=1)
         self.chart_frame.grid_columnconfigure(0, weight=1)
         cp_pane.add(self.chart_frame, weight=3)
@@ -267,7 +267,7 @@ class FileManagerApp:
         self.preview_frame.grid_columnconfigure(0, weight=1)
         cp_pane.add(self.preview_frame, weight=2)
 
-        # Ahora creamos la carpeta_tree dentro de ese frame
+        # Ahora creamos la tabla de subcarpetas pesadas
         cols_folders = ("Carpeta","Tamaño_MB","Ubicación")
         self.folder_tree = ttk.Treeview(folder_frame, columns=cols_folders, show='headings')
         for c, t in zip(cols_folders, ["Carpeta","Tamaño (MB)","Ubicación"]):
@@ -282,7 +282,7 @@ class FileManagerApp:
         self.folder_tree.grid(row=0, column=0, sticky='nsew')
         vsb_f.grid(row=0, column=1, sticky='ns')
         hsb_f.grid(row=1, column=0, sticky='ew')
-        # Doble clic abre Explorador
+        # Doble clic para abrir el Explorador
         self.folder_tree.bind(
             "<Double-1>",
             lambda e: subprocess.run(['explorer', '/select,', self.folder_tree.selection()[0]])
@@ -323,7 +323,7 @@ class FileManagerApp:
         path = Path(sel[0])
         ext = path.suffix.lower()
         self.preview_file(path, ext)
-
+    #funcion para archivos de audio
     def play_audio(self, path: Path):
         import pygame
         # Primero, intenta pyg­ame para formatos soportados
@@ -339,13 +339,13 @@ class FileManagerApp:
             os.startfile(str(path))
         except Exception as e:
             messagebox.showerror("Error audio", f"No se pudo reproducir el audio:\n{e}")
-
+    #funcion para detener la reproduccion del archivo de audio
     def stop_audio(self):
         try:
             self.audio_channel.stop()
         except:
             pass
-
+    #funcion para obtener el icono de los archivos
     def get_file_icon(self, path: Path, size=64):
         """
         Devuelve un PhotoImage con el icono de Windows asociado a `path`.
@@ -426,19 +426,19 @@ class FileManagerApp:
         try:
             ext = path.suffix.lower()
             tmp_pdf = Path(tempfile.gettempdir()) / (path.stem + "_preview.pdf")
-
+            #para archivos de word
             if ext == '.docx':
                 word = win32com.client.Dispatch('Word.Application')
                 doc = word.Documents.Open(str(path))
                 doc.SaveAs(str(tmp_pdf), FileFormat=17)  # 17 = wdFormatPDF
                 doc.Close(); word.Quit()
-
+            #para archivos power point
             elif ext == '.pptx':
                 ppt = win32com.client.Dispatch('PowerPoint.Application')
                 pres = ppt.Presentations.Open(str(path), WithWindow=False)
                 pres.SaveAs(str(tmp_pdf), FileFormat=32)  # 32 = ppSaveAsPDF
                 pres.Close(); ppt.Quit()
-
+            #para archivos excel
             elif ext == '.xlsx':
                 excel = win32com.client.Dispatch('Excel.Application')
                 wb = excel.Workbooks.Open(str(path))
@@ -466,7 +466,7 @@ class FileManagerApp:
         except Exception as e:
             print("office_to_image error:", e)
             return False
-
+    #funcion para la previzualiacion de los archivos
     def preview_file(self, path: Path, ext: str):
         # 1) Limpia preview_frame
         for w in self.preview_frame.winfo_children():
@@ -489,6 +489,7 @@ class FileManagerApp:
         )
 
         # 4) Contenido principal (imagen, vídeo, audio, etc.)
+        #para imagenes
         if ext in ('.png','.jpg','.jpeg','.gif','.bmp','.webp','.tiff','.ico'):
             try:
                 img = Image.open(path)
@@ -499,7 +500,7 @@ class FileManagerApp:
                 lbl.pack(anchor='center', expand=True, pady=10)
             except:
                 pass
-
+        #para videos
         elif ext in ('.mp4','.mkv','.avi','.mov') and cv2:
             try:
                 cap = cv2.VideoCapture(str(path))
@@ -515,14 +516,14 @@ class FileManagerApp:
                     lbl.pack(anchor='center', expand=True, pady=10)
             except:
                 pass
-
+        #para audios
         elif ext in ('.mp3','.wav','.m4a','.flac'):
             ttk.Label(container, text=path.name).pack(anchor='center', pady=(10,5))
             btnf = ttk.Frame(container)
             btnf.pack(anchor='center', pady=(0,10))
             ttk.Button(btnf, text="▶️", command=lambda p=path: self.play_audio(p)).pack(side=tk.LEFT, padx=5)
             ttk.Button(btnf, text="⏹️", command=self.stop_audio).pack(side=tk.LEFT, padx=5)
-
+        #para pdfs
         elif ext == '.pdf':
             if fitz:
                 try:
@@ -548,7 +549,7 @@ class FileManagerApp:
                 txt.insert('1.0', text)
                 txt.configure(state='disabled')
                 txt.pack(expand=True, fill='both', padx=10, pady=10)
-
+        #para archivos de office
         elif ext in ('.docx','.pptx','.xlsx'):
             if self.office_to_image(path, container):
                 # office_to_image ya pintó dentro de container
@@ -556,7 +557,7 @@ class FileManagerApp:
             else:
                 lbl_icon = ttk.Label(container, text="📄", font=("Arial", 64))
                 lbl_icon.pack(anchor='center', pady=20)
-
+        #para archivos de texto
         elif ext in ('.txt','.html','.json','.xml','.css','.js'):
             snippet = "[Error leyendo texto]"
             try:
@@ -599,6 +600,7 @@ class FileManagerApp:
         # 5) Footer centrado
         ttk.Label(container, text=footer, justify='center').pack(anchor='center', pady=(0,15))
 
+    #funcion para la seleccion de directorio
     def on_select(self):
         path = filedialog.askdirectory()
         if not path:
@@ -610,12 +612,12 @@ class FileManagerApp:
         self.extra_tree.delete(*self.extra_tree.get_children())
         for w in self.chart_frame.winfo_children():
             w.destroy()
-        self.filter_cb.set('')  # reset combobox
+        self.filter_cb.set('')  # resetear combobox
 
         self.cancel_event.clear()
         self.show_progress_popup()
         Thread(target=self.scan_directory, daemon=True).start()
-
+    #funcion para mostrar el progreso del analisis
     def show_progress_popup(self):
         self.popup = tk.Toplevel(self.root)
         self.popup.title("Escaneando carpeta...")
@@ -636,7 +638,7 @@ class FileManagerApp:
         if hasattr(self, 'popup') and self.popup.winfo_exists():
             self.popup.grab_release()
             self.popup.destroy()
-    #crear  trewview
+    #crear trewview
     def create_treeview(self, parent, columns, dbl_click):
         frame = ttk.Frame(parent)
         frame.rowconfigure(0, weight=1)
@@ -655,6 +657,7 @@ class FileManagerApp:
         parent.add(frame, weight=1)
         return tree
 
+    #ventana emergente del proceso de analisis de la carpeta
     def start_load(self):
         self.cancel_event.clear()
         self.progress_window = tk.Toplevel(self.root)
@@ -674,6 +677,7 @@ class FileManagerApp:
         self.dir_path = path
         self.scan_directory()
 
+    #escanear directorio
     def scan_directory(self):
         # Vaciar datos internos antes de comenzar
         self.files.clear()
@@ -713,7 +717,8 @@ class FileManagerApp:
 
         # Al acabar, cerrar popup y refrescar UI
         self.root.after(0, self.finish_scan)
-        
+    
+    #finalizar scaneo dentro de la ventana emergente
     def finish_scan(self):
         if hasattr(self, 'popup') and self.popup.winfo_exists():
             self.popup.grab_release()
@@ -748,12 +753,13 @@ class FileManagerApp:
         if hasattr(self, 'popup_pb') and self.popup_pb.winfo_exists():
             self.popup_pb.config(value=value)
 
-    #filtro de tipo
+    #filtro de tipo de archivo
     def populate_filter(self):
         sorted_ext = sorted(self.file_types.keys(), key=lambda e: sum(sz for _, sz in self.file_types[e]), reverse=True)
         self.filter_cb['values'] = ['Todos'] + sorted_ext
         self.filter_cb.set('Todos')
 
+    #Actualiza la tabla de resumen segun el tipo seleccionado
     def populate_summary_tree(self):
         self.summary_tree.delete(*self.summary_tree.get_children())
         for ext, items in sorted(self.file_types.items(), key=lambda x: sum(sz for _, sz in x[1]), reverse=True):
@@ -780,7 +786,7 @@ class FileManagerApp:
                     iid=str(f),
                     values=(f.name, f"{size:.5f}", ext, "Eliminar | Mover")
                 )
-
+    #funcion que se ejecuta al clickear un archivo en la tabla de acciones
     def on_action_click(self, event):
         item = self.extra_tree.identify_row(event.y)
         col  = self.extra_tree.identify_column(event.x)
@@ -789,7 +795,7 @@ class FileManagerApp:
 
         x = event.x - self.extra_tree.bbox(item, col)[0]
         mitad = self.extra_tree.column("Accion", option="width") / 2
-        path = Path(item)               # tu iid es la ruta completa
+        path = Path(item)               # tu id es la ruta completa o directorio
         ext  = path.suffix.lower() or 'Sin extensión'
 
         if x < mitad:
@@ -845,9 +851,11 @@ class FileManagerApp:
         if sel:
             subprocess.run(['explorer', '/select,', sel[0]])
 
-    #exportar los datos
+    #exportar los datos a excel
     def export_data(self):
+        #para la primera tabla
         df_files = pd.DataFrame([(str(f), size, ext) for f, size, ext in self.files], columns=["Ruta", "Tamaño_MB", "Tipo"]).sort_values("Tamaño_MB", ascending=False)
+        #para la segunda tabla
         df_sum = pd.DataFrame([(ext, sum(sz for _, sz in items)) for ext, items in self.file_types.items()], columns=["Tipo", "Tamaño_MB"]).sort_values("Tamaño_MB", ascending=False)
         path_str = filedialog.asksaveasfilename(defaultextension=".xlsx", filetypes=[("Excel", "*.xlsx"), ("CSV", "*.csv")])
         if not path_str: return
@@ -867,7 +875,7 @@ class FileManagerApp:
             df_files.to_csv(csvf, index=False)
             df_sum.to_csv(csvs, index=False)
             messagebox.showwarning("Dependencia", f"openpyxl no instalado. CSVs: {csvf}, {csvs}")
-
+    # ordena la tabla segun el peso del archivo
     def sort_tree(self, tree, col, numeric):
         items = tree.get_children('')
         data = [(float(tree.set(k, col)) if numeric else tree.set(k, col), k) for k in items]
@@ -903,12 +911,12 @@ class FileManagerApp:
         if not labels:
             return
 
-        # PanedWindow contenedor
+        # panel contenedor de el grafico y leyenda
         pw = ttk.PanedWindow(self.chart_frame, orient=tk.HORIZONTAL)
         pw.pack(fill=tk.BOTH, expand=True)
 
         # -------------------------
-        # Lado A: gráfico pie
+        # Lado A: gráfico circular
         fig, ax = plt.subplots(figsize=(5,5), facecolor=PALETTE[0])
         wedges, _ = ax.pie(sizes, startangle=140, wedgeprops=dict(width=0.4))
         ax.set_title("Archivos más pesados de la carpeta/disco", color=PALETTE[-1])
@@ -928,7 +936,7 @@ class FileManagerApp:
 
         lw = ttk.Frame(legend_frame)
         lw.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-
+        # valores de la leyenda segun su color y el archivo
         legend = ttk.Treeview(lw, columns=("Color","Archivo"), show='headings', height=10)
         legend.heading("Color",  text="■")
         legend.column("Color", width=30, anchor='center')
@@ -961,7 +969,7 @@ class FileManagerApp:
         annot.set_visible(False)
 
         legend.bind("<<TreeviewSelect>>", self.on_legend_select)
-        self.legend = legend  # guardamos referencia si quieres
+        self.legend = legend  # guardamos referencia
         
         def hover(event):
             if event.inaxes == ax:
@@ -977,6 +985,7 @@ class FileManagerApp:
                 fig.canvas.draw_idle()
         fig.canvas.mpl_connect("motion_notify_event", hover)
 
+    #funcion que al clickear un archivo de la leyenda esta nos direccione al archivo en la tabla de resumen general de archivos
     def on_legend_select(self, event):
         sel = event.widget.selection()
         if not sel:
@@ -996,5 +1005,3 @@ if __name__ == "__main__":
     root.geometry("1260x800")
     FileManagerApp(root)
     root.mainloop()
-
-    #code by @MathiuZuri :3
